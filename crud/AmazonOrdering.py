@@ -5,12 +5,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import pdb
-import datetime
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import FileResponse
+from fastapi import APIRouter
 
 router = APIRouter()
 class AmazonOrdering:

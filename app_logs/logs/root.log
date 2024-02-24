@@ -1,0 +1,8 @@
+2024-02-24 22:37:37,145 WDM   INFO     ====== WebDriver manager ======
+2024-02-24 22:37:37,242 WDM   INFO     Get LATEST chromedriver version for google-chrome
+2024-02-24 22:37:37,827 WDM   INFO     Get LATEST chromedriver version for google-chrome
+2024-02-24 22:37:38,087 WDM   INFO     Driver [/home/dhruv/.wdm/drivers/chromedriver/linux64/120.0.6099.109/chromedriver-linux64/chromedriver] found in cache
+2024-02-24 22:38:56,318 WDM   INFO     ====== WebDriver manager ======
+2024-02-24 22:38:56,414 WDM   INFO     Get LATEST chromedriver version for google-chrome
+2024-02-24 22:38:56,712 WDM   INFO     Get LATEST chromedriver version for google-chrome
+2024-02-24 22:38:57,144 WDM   INFO     Driver [/home/dhruv/.wdm/drivers/chromedriver/linux64/120.0.6099.109/chromedriver-linux64/chromedriver] found in cache

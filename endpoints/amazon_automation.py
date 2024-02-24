@@ -1,10 +1,12 @@
-
 from fastapi import APIRouter
 from crud.AmazonOrdering import AmazonOrdering
 import logging
+from core.logging_utils import setup_logger
 
-logging.basicConfig(level=logging.INFO, filename="./logs/amazon.log",filemode="w")
-logger = logging.getLogger("amazon")
+log_name = "amazon"
+endpoint_device_logger_setup = setup_logger(log_name, level='INFO')
+logger = logging.getLogger(log_name)
+
 router = APIRouter()
 
 @router.post("/", summary="Initiate Amazon Automation")
