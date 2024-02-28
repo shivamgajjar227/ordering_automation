@@ -6,6 +6,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from fastapi import APIRouter
+import threading
+import time
 
 router = APIRouter()
 class AmazonOrdering:
@@ -18,17 +20,24 @@ class AmazonOrdering:
         self.email = None
         self.password = None
         self.buy_btn = None
+        self.product_link = None
+        self.ordering_process_thread_object = None
 
 
     def start_ordering_process_thread(self,email:str,password:str,product_link:str):
         try:
             self.email = email
             self.password = password
-            self.web = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
-            self.web.get(product_link)
-            self.checking_for_any_captcha()
+            self.product_link = product_link
+            self.ordering_process_thread_object = threading.Thread(target=self.ordering_process)
         except Exception as e:
             return e
+
+    def ordering_process(self):
+        self.web = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
+        self.web.get(self.product_link)
+        self.checking_for_any_captcha()
+        pass
 
     def captcha_or_not(self):
         try:
