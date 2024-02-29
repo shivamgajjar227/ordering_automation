@@ -12,7 +12,13 @@ import time
 router = APIRouter()
 class AmazonOrdering:
 
-    def __init__(self):
+    STATUS_PROCESS_STARTED = 1
+    STATUS_CHECKING_FOR_CAPTCHA = 2
+    STATUS_CHECKING_CAPTCHA_FILLED = 3
+    STATUS_LOGIN_DONE = 4
+    STATUS_ORDER_ADDED_TO_KART = 5
+
+    def __init__(self, ordering_object_id):
         self.is_otp_required = False
         self.web = None
         self.captcha = None
@@ -22,6 +28,8 @@ class AmazonOrdering:
         self.buy_btn = None
         self.product_link = None
         self.ordering_process_thread_object = None
+        self.ordering_process_status = 0
+        self.ordering_object_id = None
 
 
     def start_ordering_process_thread(self,email:str,password:str,product_link:str):
@@ -38,6 +46,28 @@ class AmazonOrdering:
         self.web.get(self.product_link)
         self.checking_for_any_captcha()
         pass
+
+    def ordering_process_block_wise(self):
+        """
+
+        :return:
+        """
+        """
+        1 check for captcha, if got captcha then fill it
+        """
+        # code of checking and filling captcha
+
+        # change the status
+        self.ordering_process_status = self.STATUS_CHECKING_CAPTCHA_FILLED
+
+        """
+        2 login
+        """
+        self.ordering_process_status = self.STATUS_LOGIN_DONE
+        pass
+
+    def get_ordering_process_status(self):
+        return self.ordering_process_status
 
     def captcha_or_not(self):
         try:
