@@ -1,3 +1,5 @@
+import logging
+
 from selenium import webdriver
 import time
 from selenium.webdriver.chrome.service import Service as ChromeService
