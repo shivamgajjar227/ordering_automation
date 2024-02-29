@@ -19,7 +19,7 @@ def main(email:str, password:str, product_link:str):
         ordering_object_id = constants.ordering_object_id
         ordering_object_id_wise_dict = constants.ordering_object_id_wise_dict
         ordering_object_id_wise_dict[ordering_object_id] = AmazonOrdering(ordering_object_id=ordering_object_id)
-        response = ordering_object_id_wise_dict[ordering_object_id].start_ordering_process_thread(email=email,password=password, product_link=product_link)
+        response = ordering_object_id_wise_dict[ordering_object_id].ordering_process_block_wise(email=email,password=password, product_link=product_link)
         ordering_object_id += 1
         logger.info("success")
         return response

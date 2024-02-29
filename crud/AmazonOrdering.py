@@ -1,7 +1,5 @@
 import logging
-
 from selenium import webdriver
-import time
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
@@ -12,13 +10,21 @@ import threading
 import time
 
 router = APIRouter()
-class AmazonOrdering:
 
+class AmazonOrdering:
     STATUS_PROCESS_STARTED = 1
-    STATUS_CHECKING_FOR_CAPTCHA = 2
-    STATUS_CHECKING_CAPTCHA_FILLED = 3
-    STATUS_LOGIN_DONE = 4
-    STATUS_ORDER_ADDED_TO_KART = 5
+    STATUS_PRODUCT_FOUND = 2
+    STATUS_CHECKING_FOR_CAPTCHA = 3
+    STATUS_CAPTCHA_FOUND = 4
+    STATUS_CAPTCHA_SUCCESSFUL = 5
+    STATUS_CAPTCHA_FAILED = 6
+    STATUS_PROCESS_LOGIN_USER = 7
+    STATUS_LOGIN_DONE = 8
+    STATUS_CHECKING_FOR_OTP = 9
+    STATUS_ENTER_OTP = 10
+    STATUS_OTP_SUCCESSFUL = 11
+    STATUS_PLACING_ORDER = 12
+    STATUS_ORDER_PLACED = 13
 
     def __init__(self, ordering_object_id):
         self.is_otp_required = False
@@ -32,143 +38,162 @@ class AmazonOrdering:
         self.ordering_process_thread_object = None
         self.ordering_process_status = 0
         self.ordering_object_id = None
+        self.element = None
+        self.success_captcha = 0
+
+    def ordering_process_block_wise(self, email: str, password: str, product_link: str):
+        self.email = email
+        self.password = password
+        self.product_link = product_link
 
 
-    def start_ordering_process_thread(self,email:str,password:str,product_link:str):
+        """Process started"""
+        self.ordering_process_status = self.STATUS_PROCESS_STARTED
+
+
+        """ Opening product link"""
+        self.start_ordering_process_thread()
+        self.ordering_process_status = self.STATUS_PRODUCT_FOUND
+
+
+        """ Checking for captcha"""
+        self.ordering_process_status = self.STATUS_CHECKING_FOR_CAPTCHA
+        captcha = self.checking_for_any_captcha()
+        while self.success_captcha != 1:
+            if captcha:
+                self.ordering_process_status = self.STATUS_CAPTCHA_FOUND
+                self.success_captcha = self.input_captcha()
+                if self.success_captcha == 1:
+                    self.ordering_process_status = self.STATUS_CAPTCHA_SUCCESSFUL
+                else:
+                    self.ordering_process_status = self.STATUS_CAPTCHA_FAILED
+
+
+        """ BUYING THE PRODUCT"""
+        self.buying_product()
+
+
+        """ LOGGING IN"""
+        self.ordering_process_status = self.STATUS_PROCESS_LOGIN_USER
+        self.login_user()
+        self.ordering_process_status = self.STATUS_LOGIN_DONE
+
+
+        """ CHECKING FOR OTP """
+        self.ordering_process_status = self.STATUS_CHECKING_FOR_OTP
+        otp = self.check_for_otp()
+        if otp:
+            self.ordering_process_status = self.STATUS_ENTER_OTP
+            self.input_otp()
+        self.ordering_process_status = self.STATUS_OTP_SUCCESSFUL
+
+
+        """ PLACING ORDER """
+        self.ordering_process_status = self.STATUS_PLACING_ORDER
+        self.cash_payment()
+        self.ordering_process_status = self.STATUS_ORDER_PLACED
+
+
+    def start_ordering_process_thread(self):
         try:
-            self.email = email
-            self.password = password
-            self.product_link = product_link
-            self.ordering_process_thread_object = threading.Thread(target=self.ordering_process)
+            self.ordering_process_thread_object = threading.Thread(target=self.ordering_process())
         except Exception as e:
             return e
 
     def ordering_process(self):
-        self.web = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
-        self.web.get(self.product_link)
-        self.checking_for_any_captcha()
-        pass
+        try:
+            self.web = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
+            self.web.get(self.product_link)
+        except Exception as e:
+            return (f"no product found, error: {e}")
 
-    def ordering_process_block_wise(self):
-        """
-
-        :return:
-        """
-        """
-        1 check for captcha, if got captcha then fill it
-        """
-        # code of checking and filling captcha
-
-        # change the status
-        self.ordering_process_status = self.STATUS_CHECKING_CAPTCHA_FILLED
-
-        """
-        2 login
-        """
-        self.ordering_process_status = self.STATUS_LOGIN_DONE
-        pass
-
-    def get_ordering_process_status(self):
-        return self.ordering_process_status
+    def checking_for_any_captcha(self):
+        try:
+            self.element = self.captcha_or_not()
+            if self.element == self.captcha:
+                return 1
+            elif self.element == self.buy_btn:
+                return 0
+        except Exception as e:
+            return e
 
     def captcha_or_not(self):
         try:
-            self.captcha = self.web.find_element(By.XPATH, "/html/body/div/div[1]/div[3]/div/div/form/div[1]/div/div/div[2]/input")
+            self.captcha = self.web.find_element(By.XPATH,
+                                                 "/html/body/div/div[1]/div[3]/div/div/form/div[1]/div/div/div[2]/input")
             return self.captcha
         except:
             try:
                 self.buy_btn = self.web.find_element(By.XPATH,
-                                       "/html/body/div[2]/div/div[6]/div[3]/div[1]/div[3]/div/div[1]/div/div/div/form/div/div/div/div/div[4]/div/div[39]/div/div/span/span/input")
+                                                     "/html/body/div[2]/div/div[6]/div[3]/div[1]/div[3]/div/div[1]/div/div/div/form/div/div/div/div/div[4]/div/div[39]/div/div/span/span/input")
                 return self.buy_btn
             except Exception as e:
                 return e
 
-    def checking_for_any_captcha(self):
-        try:
-            element = self.captcha_or_not()
-            if element == self.captcha:
-                self.if_captcha()
-            elif element == self.buy_btn:
-                self.placing_order()
-            else:
-                print(element)
-
-        except Exception as e:
-            print("in exception")
-            print(e)
-
-    def if_captcha(self):
+    def input_captcha(self):
         try:
             captcha_success = WebDriverWait(self.web, 120).until(
                 EC.presence_of_element_located((By.XPATH,
                                                 "/html/body/div[2]/div/div[6]/div[3]/div[1]/div[3]/div/div[1]/div/div/div/form/div/div/div/div/div[4]/div/div[39]/div/div/span/span/input"))
             )
             if captcha_success:
-                self.placing_order()
+                return 1
+        except Exception as e:
+            return e
+
+    def buying_product(self):
+        try:
+            time.sleep(2)
+            buy_btn = self.web.find_element(By.XPATH,
+                                            "/html/body/div[2]/div/div[6]/div[3]/div[1]/div[3]/div/div[1]/div/div/div/form/div/div/div/div/div[4]/div/div[39]/div/div/span/span/input")
+            buy_btn.click()
+            time.sleep(1)
         except Exception as e:
             return e
 
     def login_user(self):
         try:
             username = self.web.find_element(By.XPATH,
-                                        "/html/body/div[1]/div[1]/div[2]/div/div[2]/div[2]/div[1]/form/div/div/div/div[1]/input[1]")
+                                             "/html/body/div[1]/div[1]/div[2]/div/div[2]/div[2]/div[1]/form/div/div/div/div[1]/input[1]")
             username.send_keys(self.email)
 
             submit = self.web.find_element(By.XPATH,
-                                      "/html/body/div[1]/div[1]/div[2]/div/div[2]/div[2]/div[1]/form/div/div/div/div[2]/span/span/input ")
+                                           "/html/body/div[1]/div[1]/div[2]/div/div[2]/div[2]/div[1]/form/div/div/div/div[2]/span/span/input ")
             submit.click()
-            time.sleep(1)
+            time.sleep(2)
 
             password = self.web.find_element(By.XPATH,
-                                        "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div[2]/div/form/div/div[1]/input")
+                                             "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div[2]/div/form/div/div[1]/input")
             password.send_keys(self.password)
 
             login = self.web.find_element(By.XPATH,
-                                     "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div[2]/div/form/div/div[2]/span/span/input")
+                                          "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div[2]/div/form/div/div[2]/span/span/input")
             login.click()
-            self.check_for_otp()
         except Exception as e:
             return e
 
     def check_for_otp(self):
         try:
-            otp_input_field = WebDriverWait(self.web, 5).until(
-                EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[2]/div/div/div[3]/form/div[1]/div/div/span[1]/div/input"))
+            otp_input_field = WebDriverWait(self.web, 10).until(
+                EC.presence_of_element_located(
+                    (By.XPATH, "/html/body/div[1]/div[2]/div/div/div[3]/form/div[1]/div/div/span[1]/div/input"))
             )
 
             if otp_input_field:
-                otp_success_field = WebDriverWait(self.web, 25).until(
-                    EC.presence_of_element_located(
-                        (By.XPATH, "/html/body/div[1]/header/div/div[1]/div[2]/div/form/div[2]/div[1]/input"))
-                )
-                self.cash_payment()
+                return 1
+
+            return 0
+
         except Exception as e:
-            self.cash_payment()
+            return 0
 
-    def search_element(self):
+    def input_otp(self):
         try:
-            search = self.web.find_element(By.XPATH, "/html/body/div[1]/header/div/div[1]/div[2]/div/form/div[2]/div[1]/input")
-            search.send_keys("a4 size paper")
-
-            time.sleep(2)
-
-            search_btn = self.web.find_element(By.XPATH,
-                                          "/html/body/div[1]/header/div/div[1]/div[2]/div/form/div[3]/div/span/input")
-            search_btn.click()
-
-            self.placing_order()
-        except Exception as e:
-            return e
-
-    def placing_order(self):
-        try:
-            time.sleep(2)
-            buy_btn = self.web.find_element(By.XPATH,
-                                       "/html/body/div[2]/div/div[6]/div[3]/div[1]/div[3]/div/div[1]/div/div/div/form/div/div/div/div/div[4]/div/div[39]/div/div/span/span/input")
-            buy_btn.click()
-
-            time.sleep(2)
-            self.login_user()
+            success_otp = WebDriverWait(self.web, 25).until(
+                EC.presence_of_element_located(
+                    (By.XPATH,
+                     "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[1]/div/div[2]/div[6]/div/div/div/div/div[1]/div/label/input"))
+            )
         except Exception as e:
             return e
 
@@ -182,19 +207,38 @@ class AmazonOrdering:
 
             payment_page = WebDriverWait(self.web, 25).until(
                 EC.presence_of_element_located(
-                    (By.XPATH, "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[2]/div/span/span/input"))
+                    (By.XPATH,
+                     "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[2]/div/span/span/input"))
             )
 
             payment_selection = self.web.find_element(By.XPATH,
                                                       "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[2]/div/span/span/input")
             payment_selection.click()
 
-            time.sleep(10)
+            time.sleep(5)
 
             # order_now = self.web.find_element(By.XPATH,
             #                                   "/html/body/div[5]/div[1]/div/div[2]/div/div/div[2]/div/div[1]/div/div[1]/div[1]/div/span")
             # order_now.click()
-            time.sleep(5)
+            time.sleep(2)
 
         except Exception as e:
             return e
+
+    '''def search_element(self):
+            try:
+                search = self.web.find_element(By.XPATH, "/html/body/div[1]/header/div/div[1]/div[2]/div/form/div[2]/div[1]/input")
+                search.send_keys("a4 size paper")
+
+                time.sleep(2)
+
+                search_btn = self.web.find_element(By.XPATH,
+                                              "/html/body/div[1]/header/div/div[1]/div[2]/div/form/div[3]/div/span/input")
+                search_btn.click()
+
+                self.placing_order()
+            except Exception as e:
+                return e'''
+
+    def get_ordering_process_status(self):
+        return self.ordering_process_status
