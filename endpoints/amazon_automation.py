@@ -35,3 +35,13 @@ def main(email:str, password:str, product_link:str):
     except Exception as e:
         logger.exception("error")
         return e
+
+
+@router.post(f"/pass_otp_string/{ordering_object_id}", summary="Initiate Amazon Automation")
+def pass_otp_string( otp_string:str):
+    try:
+        status = ordering_object_id_wise_dict[ordering_object_id].pass_otp_string(otp_string=otp_string)
+        return {"status": status}
+    except Exception as e:
+        logger.exception("error")
+        return e

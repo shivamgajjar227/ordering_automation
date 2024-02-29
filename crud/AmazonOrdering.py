@@ -40,6 +40,7 @@ class AmazonOrdering:
         self.ordering_object_id = None
         self.element = None
         self.success_captcha = 0
+        self.otp_string = None
 
     def ordering_process_block_wise(self, email: str, password: str, product_link: str):
         self.email = email
@@ -84,7 +85,9 @@ class AmazonOrdering:
         otp = self.check_for_otp()
         if otp:
             self.ordering_process_status = self.STATUS_ENTER_OTP
-            self.input_otp()
+            while not self.otp_string is None:
+                time.sleep(0.3)
+
         self.ordering_process_status = self.STATUS_OTP_SUCCESSFUL
 
 
@@ -99,6 +102,10 @@ class AmazonOrdering:
             self.ordering_process_thread_object = threading.Thread(target=self.ordering_process())
         except Exception as e:
             return e
+
+    def pass_otp_string(self, otp_string):
+        self.otp_string = otp_string
+        pass
 
     def ordering_process(self):
         try:
