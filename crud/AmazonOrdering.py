@@ -23,8 +23,9 @@ class AmazonOrdering:
     STATUS_CHECKING_FOR_OTP = 9
     STATUS_ENTER_OTP = 10
     STATUS_OTP_SUCCESSFUL = 11
-    STATUS_PLACING_ORDER = 12
-    STATUS_ORDER_PLACED = 13
+    STATUS_OTP_FAILED = 12
+    STATUS_PLACING_ORDER = 13
+    STATUS_ORDER_PLACED = 14
 
     def __init__(self, ordering_object_id):
         self.is_otp_required = False
@@ -83,12 +84,17 @@ class AmazonOrdering:
         """ CHECKING FOR OTP """
         self.ordering_process_status = self.STATUS_CHECKING_FOR_OTP
         otp = self.check_for_otp()
-        if otp:
+        while otp != 1:
             self.ordering_process_status = self.STATUS_ENTER_OTP
             while not self.otp_string is None:
                 time.sleep(0.3)
-
-        self.ordering_process_status = self.STATUS_OTP_SUCCESSFUL
+            otp_success = self.input_otp(otp=self.otp_string)
+            if otp_success:
+                self.ordering_process_status = self.STATUS_OTP_SUCCESSFUL
+            else:
+                self.ordering_process_status = self.STATUS_OTP_FAILED
+        # otp_input_field = "/html/body/div[1]/div[2]/div/div/div/div/div/div[1]/form/div[2]/div[2]/div/input"
+        #otp_submit = "/html/body/div[1]/div[2]/div/div/div/div/div/div[1]/form/div[4]/span/span/input"
 
 
         """ PLACING ORDER """
@@ -104,8 +110,10 @@ class AmazonOrdering:
             return e
 
     def pass_otp_string(self, otp_string):
-        self.otp_string = otp_string
-        pass
+        try:
+            self.otp_string = otp_string
+        except Exception as e:
+            return e
 
     def ordering_process(self):
         try:
@@ -188,19 +196,27 @@ class AmazonOrdering:
 
             if otp_input_field:
                 return 1
-
             return 0
 
         except Exception as e:
             return 0
 
-    def input_otp(self):
+    def input_otp(self,otp:str):
         try:
+            otp_input_field = self.web.find_element(By.XPATH,"/html/body/div[1]/div[2]/div/div/div/div/div/div[1]/form/div[2]/div[2]/div/input")
+            otp_input_field.send_keys(otp)
+
+            submit_otp = self.web.find_element(By.XPATH,"/html/body/div[1]/div[2]/div/div/div/div/div/div[1]/form/div[4]/span/span/input")
+            submit_otp.click()
+
             success_otp = WebDriverWait(self.web, 25).until(
                 EC.presence_of_element_located(
                     (By.XPATH,
                      "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[1]/div/div[2]/div[6]/div/div/div/div/div[1]/div/label/input"))
             )
+            if success_otp:
+                return 1
+            return 0
         except Exception as e:
             return e
 
@@ -222,7 +238,7 @@ class AmazonOrdering:
                                                       "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[2]/div/span/span/input")
             payment_selection.click()
 
-            time.sleep(5)
+            time.sleep(3)
 
             # order_now = self.web.find_element(By.XPATH,
             #                                   "/html/body/div[5]/div[1]/div/div[2]/div/div/div[2]/div/div[1]/div/div[1]/div[1]/div/span")
