@@ -2,3 +2,7 @@
 /logging_module/mappinglist/* 
 /logging_module/logs/* 
 /logging_module/root.log
+app_logs
+/endpoints/__pycache__
+crud/__pycache__
+__pycache__
