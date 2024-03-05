@@ -1,5 +1,7 @@
 import logging
 from selenium import webdriver
+from selenium.common import NoSuchElementException
+from selenium.webdriver import Keys
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
@@ -49,19 +51,20 @@ class AmazonOrdering:
         self.email = email
         self.password = password
         self.product_link = product_link
-
+        print("Process started")
         """ Process started """
         self.ordering_process_status = self.STATUS_PROCESS_STARTED
+        print("Opening product link")
 
         """ Opening product link """
         self.start_ordering_process_thread()
         self.ordering_process_status = self.STATUS_PRODUCT_FOUND
 
-
         """ Removing Captcha Page """
-        time.sleep(4)
-        self.web.refresh()
+        # time.sleep(4)
+        # self.web.refresh()
 
+        print("Checking for captcha")
 
         """ Checking for captcha """
         self.ordering_process_status = self.STATUS_CHECKING_FOR_CAPTCHA
@@ -75,14 +78,19 @@ class AmazonOrdering:
                         self.ordering_process_status = self.STATUS_CAPTCHA_SUCCESSFUL
                     else:
                         self.ordering_process_status = self.STATUS_CAPTCHA_FAILED
+        else:
+            print("No captcha founddddddddddddd")
+        print("Buying the product")
 
         """ BUYING THE PRODUCT"""
         self.buying_product()
+        print("logging in")
 
         """ LOGGING IN """
         self.ordering_process_status = self.STATUS_PROCESS_LOGIN_USER
         self.login_user()
         self.ordering_process_status = self.STATUS_LOGIN_DONE
+        print("Checking for otp")
 
         """ CHECKING FOR OTP """
         self.ordering_process_status = self.STATUS_CHECKING_FOR_OTP
@@ -97,10 +105,12 @@ class AmazonOrdering:
                     self.ordering_process_status = self.STATUS_OTP_SUCCESSFUL
                 else:
                     self.ordering_process_status = self.STATUS_OTP_FAILED
+        print("placing order")
 
         """ PLACING ORDER """
         self.ordering_process_status = self.STATUS_PLACING_ORDER
         self.cash_payment()
+        self .place_order()
         self.ordering_process_status = self.STATUS_ORDER_PLACED
 
     def start_ordering_process_thread(self):
@@ -126,23 +136,26 @@ class AmazonOrdering:
     def checking_for_any_captcha(self):
         try:
             self.element = self.captcha_or_not()
-            if self.element == self.captcha:
-                return 1
-            elif self.element == self.buy_btn:
+
+            if self.element == self.buy_btn:
                 return 0
+            else:
+                return 1
         except Exception as e:
             return e
 
     def captcha_or_not(self):
-        try:
-            self.captcha = self.web.find_element(By.XPATH,
-                                                 "/html/body/div/div[1]/div[3]/div/div/form/div[1]/div/div/div[2]/input")
-            return self.captcha
-        except:
+
+            # self.captcha = self.web.find_element(By.XPATH,
+            #                                      "/html/body/div/div[1]/div[3]/div/div/form/div[1]/div/div/div[2]/input")
+
             try:
-                self.buy_btn = self.web.find_element(By.XPATH,
-                                                     "/html/body/div[2]/div/div[6]/div[3]/div[1]/div[3]/div/div[1]/div/div/div/form/div/div/div/div/div[4]/div/div[39]/div/div/span/span/input")
+                self.buy_btn = WebDriverWait(self.web, 10).until(
+                    EC.presence_of_element_located((By.ID,
+                                                    "buy-now-button"))
+                )
                 return self.buy_btn
+
             except Exception as e:
                 return e
 
@@ -150,7 +163,7 @@ class AmazonOrdering:
         try:
             captcha_success = WebDriverWait(self.web, 120).until(
                 EC.presence_of_element_located((By.XPATH,
-                                                "/html/body/div[2]/div/div[6]/div[3]/div[1]/div[3]/div/div[1]/div/div/div/form/div/div/div/div/div[4]/div/div[39]/div/div/span/span/input"))
+                                                "/html/body/div/div[1]/div[3]/div/div/form/div[1]/div/div/div[2]/input"))
             )
             if captcha_success:
                 return 1
@@ -158,33 +171,71 @@ class AmazonOrdering:
             return e
 
     def buying_product(self):
+        print("Buying enter")
         try:
+            print("Buying started")
             time.sleep(2)
-            buy_btn = self.web.find_element(By.XPATH,
-                                            "/html/body/div[2]/div/div[6]/div[3]/div[1]/div[3]/div/div[1]/div/div/div/form/div/div/div/div/div[4]/div/div[39]/div/div/span/span/input")
+            buy_btn = WebDriverWait(self.web, 10).until(
+                    EC.presence_of_element_located((By.ID, "buy-now-button")
+                ))
             buy_btn.click()
+            print("Buying button clicked")
             time.sleep(1)
         except Exception as e:
+            print("Buying not done ")
+            print(e)
             return e
 
     def login_user(self):
         try:
-            username = self.web.find_element(By.XPATH,
-                                             "/html/body/div[1]/div[1]/div[2]/div/div[2]/div[2]/div[1]/form/div/div/div/div[1]/input[1]")
-            username.send_keys(self.email)
+            try:
+                # username = WebDriverWait(self.web, 10).until(
+                #     EC.presence_of_element_located((By.XPATH,
+                #                                     "/html/body/div[1]/div[1]/div[2]/div/div[2]/div[2]/div[1]/form/div/div/div/div[1]/input[1]"))
+                # )
+                # username.send_keys(self.email)
+                # self.driver.get("https://www.amazon.com/gp/sign-in.html")
 
-            submit = self.web.find_element(By.XPATH,
-                                           "/html/body/div[1]/div[1]/div[2]/div/div[2]/div[2]/div[1]/form/div/div/div/div[2]/span/span/input ")
-            submit.click()
+                # Find username input field and enter email
+                username_input = WebDriverWait(self.web, 10).until(
+                    EC.presence_of_element_located((By.ID, "ap_email"))
+                )
+                username_input.send_keys(self.email)
+                print("Username sent")
+
+
+            except Exception as e:
+                print(f"Timeout occurred while finding the username input field: {e}")
+
+            try:
+                submit = WebDriverWait(self.web, 10).until(
+                    EC.element_to_be_clickable((By.ID,
+                                                "continue"))
+                )
+                submit.click()
+            except Exception as e:
+                print(f"Timeout occurred while finding the submit button: {e}")
             time.sleep(2)
 
-            password = self.web.find_element(By.XPATH,
-                                             "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div[2]/div/form/div/div[1]/input")
-            password.send_keys(self.password)
+            try:
+                password = WebDriverWait(self.web, 10).until(
+                    EC.visibility_of_element_located(
+                        (By.ID, "ap_password"))
+                )
+                password.send_keys(self.password)
+                print("Password sent")
+            except Exception as e:
+                print(f"Timeout occurred while finding the password input field: {e}")
 
-            login = self.web.find_element(By.XPATH,
-                                          "/html/body/div[1]/div[1]/div[2]/div/div[2]/div/div[2]/div/form/div/div[2]/span/span/input")
-            login.click()
+            try:
+                login = WebDriverWait(self.web, 10).until(
+                    EC.element_to_be_clickable((By.ID,
+                                                "signInSubmit"))
+                )
+                login.click()
+            except Exception as e:
+                print(f"Timeout occurred while finding the login button: {e}")
+
         except Exception as e:
             return e
 
@@ -239,9 +290,9 @@ class AmazonOrdering:
 
             time.sleep(3)
 
-            # order_now = self.web.find_element(By.XPATH,
-            #                                   "/html/body/div[5]/div[1]/div/div[2]/div/div/div[2]/div/div[1]/div/div[1]/div[1]/div/span")
-            # order_now.click()
+            order_now = self.web.find_element(By.XPATH,
+                                              "/html/body/div[5]/div[1]/div/div[2]/div/div/div[2]/div/div[1]/div/div[1]/div[1]/div/span")
+            order_now.click()
             time.sleep(2)
 
         except Exception as e:
@@ -261,6 +312,17 @@ class AmazonOrdering:
                 self.placing_order()
             except Exception as e:
                 return e'''
+
+    def place_order(self):
+        try:
+            place_odr=WebDriverWait(self.web, 10).until(
+                    EC.element_to_be_clickable((By.ID,
+                                                "bottomSubmitOrderButtonId"))
+            )
+            place_odr.click()
+        except Exception as e:
+            print(e)
+            return e
 
     def get_ordering_process_status(self):
         return self.ordering_process_status
