@@ -51,7 +51,7 @@ class AmazonOrdering:
         self.email = email
         self.password = password
         self.product_link = product_link
-        print("Process started")
+
         """ Process started """
         self.ordering_process_status = self.STATUS_PROCESS_STARTED
         print("Opening product link")
@@ -109,7 +109,9 @@ class AmazonOrdering:
 
         """ PLACING ORDER """
         self.ordering_process_status = self.STATUS_PLACING_ORDER
-        self.cash_payment()
+        cod=self.cash_payment()
+        if not cod:
+            return {"COD not available"}
         self .place_order()
         self.ordering_process_status = self.STATUS_ORDER_PLACED
 
@@ -162,8 +164,8 @@ class AmazonOrdering:
     def input_captcha(self):
         try:
             captcha_success = WebDriverWait(self.web, 120).until(
-                EC.presence_of_element_located((By.XPATH,
-                                                "/html/body/div/div[1]/div[3]/div/div/form/div[1]/div/div/div[2]/input"))
+                EC.presence_of_element_located((By.ID,
+                                                "captchacharacters"))
             )
             if captcha_success:
                 return 1
@@ -206,6 +208,7 @@ class AmazonOrdering:
 
             except Exception as e:
                 print(f"Timeout occurred while finding the username input field: {e}")
+                return e
 
             try:
                 submit = WebDriverWait(self.web, 10).until(
@@ -213,8 +216,10 @@ class AmazonOrdering:
                                                 "continue"))
                 )
                 submit.click()
+                time.sleep(5)
             except Exception as e:
                 print(f"Timeout occurred while finding the submit button: {e}")
+                return e
             time.sleep(2)
 
             try:
@@ -226,6 +231,7 @@ class AmazonOrdering:
                 print("Password sent")
             except Exception as e:
                 print(f"Timeout occurred while finding the password input field: {e}")
+                return e
 
             try:
                 login = WebDriverWait(self.web, 10).until(
@@ -233,8 +239,10 @@ class AmazonOrdering:
                                                 "signInSubmit"))
                 )
                 login.click()
+                time.sleep(5)
             except Exception as e:
                 print(f"Timeout occurred while finding the login button: {e}")
+                return e
 
         except Exception as e:
             return e
@@ -275,6 +283,8 @@ class AmazonOrdering:
                                              "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[1]/div/div/div[6]/div/div/div/div/div[1]/div/label/input")
             cash_pay.click()
 
+            if not cash_pay.is_enabled():
+                return 0
 
             payment_page = WebDriverWait(self.web, 25).until(
                 EC.presence_of_element_located(
@@ -315,7 +325,7 @@ class AmazonOrdering:
 
     def place_order(self):
         try:
-            place_odr=WebDriverWait(self.web, 10).until(
+            place_odr = WebDriverWait(self.web, 10).until(
                     EC.element_to_be_clickable((By.ID,
                                                 "bottomSubmitOrderButtonId"))
             )
