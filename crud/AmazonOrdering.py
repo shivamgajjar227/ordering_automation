@@ -2,6 +2,7 @@ import logging
 from selenium import webdriver
 from selenium.common import NoSuchElementException
 from selenium.webdriver import Keys
+from amazoncaptcha import AmazonCaptcha
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
@@ -183,7 +184,7 @@ class AmazonOrdering:
         #                                      "/html/body/div/div[1]/div[3]/div/div/form/div[1]/div/div/div[2]/input")
 
         try:
-            self.buy_btn = WebDriverWait(self.web, 120).until(
+            self.buy_btn = WebDriverWait(self.web, 10).until(
                 EC.presence_of_element_located((By.ID,
                                                 "buy-now-button"))
             )
@@ -194,10 +195,24 @@ class AmazonOrdering:
 
     def input_captcha(self):
         try:
+
+            '''By Passing Captcha'''
+
+            link=self.web.find_element(By.XPATH,
+                                  "//div[@class = 'a-row a-text-center']//img").get_attribute('src')
+            captcha=AmazonCaptcha.fromlink(link)
+            captcha_value=AmazonCaptcha.solve(captcha)
+            print(captcha_value)
             captcha_success = WebDriverWait(self.web, 120).until(
                 EC.presence_of_element_located((By.ID,
                                                 "captchacharacters"))
             )
+            captcha_success.send_keys(captcha_value)
+            captcha_btn=WebDriverWait(self.web, 120).until(
+                EC.presence_of_element_located((By.CLASS_NAME,
+                                                "a-button-text"))
+            )
+            captcha_btn.click()
             if captcha_success:
                 return 1
         except Exception as e:
