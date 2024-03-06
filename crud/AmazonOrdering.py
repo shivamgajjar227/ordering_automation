@@ -20,14 +20,17 @@ class AmazonOrdering:
     STATUS_CAPTCHA_FOUND = 4
     STATUS_CAPTCHA_SUCCESSFUL = 5
     STATUS_CAPTCHA_FAILED = 6
-    STATUS_PROCESS_LOGIN_USER = 7
-    STATUS_LOGIN_DONE = 8
-    STATUS_CHECKING_FOR_OTP = 9
-    STATUS_ENTER_OTP = 10
-    STATUS_OTP_SUCCESSFUL = 11
-    STATUS_OTP_FAILED = 12
-    STATUS_PLACING_ORDER = 13
-    STATUS_ORDER_PLACED = 14
+    STATUS_BUYING_STARTED=7
+    STATUS_PROCESS_LOGIN_USER = 8
+    STATUS_LOGIN_DONE = 9
+    STATUS_CHECKING_FOR_OTP = 10
+    STATUS_ENTER_OTP = 11
+    STATUS_OTP_SUCCESSFUL = 12
+    STATUS_OTP_FAILED = 13
+    STATUS_PLACING_ORDER = 14
+    STATUS_ORDER_PLACED = 15
+    STATUS_BUYING_FAILED=16
+
 
     def __init__(self, ordering_object_id):
         self.is_otp_required = False
@@ -83,12 +86,28 @@ class AmazonOrdering:
         print("Buying the product")
 
         """ BUYING THE PRODUCT"""
-        self.buying_product()
+        self.ordering_process_status=self.STATUS_BUYING_STARTED
+        buying_product=self.buying_product()
+        if not buying_product:
+            self.ordering_process_status=self.STATUS_BUYING_FAILED
+            return {"buying failed":self.ordering_process_status}
         print("logging in")
 
         """ LOGGING IN """
         self.ordering_process_status = self.STATUS_PROCESS_LOGIN_USER
-        self.login_user()
+        login_user=self.login_user()
+        if login_user==0:
+            return {"login failed":self.ordering_process_status}
+        elif login_user==2:
+            return {"username field not found":self.ordering_process_status}
+        elif login_user==3:
+            return {"username continue button not found":self.ordering_process_status}
+        elif login_user==4:
+            return {"password password field not found ":self.ordering_process_status}
+        elif login_user==5:
+            return {"login button not found":self.ordering_process_status}
+
+
         self.ordering_process_status = self.STATUS_LOGIN_DONE
         print("Checking for otp")
 
@@ -96,23 +115,37 @@ class AmazonOrdering:
         self.ordering_process_status = self.STATUS_CHECKING_FOR_OTP
         otp = self.check_for_otp()
         if otp == 1:
-            while self.otp_success != 1:
-                self.ordering_process_status = self.STATUS_ENTER_OTP
-                while not self.otp_string is None:
-                    time.sleep(0.4)
-                self.otp_success = self.input_otp(otp=self.otp_string)
-                if self.otp_success:
-                    self.ordering_process_status = self.STATUS_OTP_SUCCESSFUL
-                else:
-                    self.ordering_process_status = self.STATUS_OTP_FAILED
-        print("placing order")
+            try:
+
+                while self.otp_success != 1:
+                    self.ordering_process_status = self.STATUS_ENTER_OTP
+                    while not self.otp_string is None:
+                        time.sleep(0.4)
+                    self.otp_success = self.input_otp(otp=self.otp_string)
+                    if self.otp_success:
+                        self.ordering_process_status = self.STATUS_OTP_SUCCESSFUL
+                    else:
+                        self.ordering_process_status = self.STATUS_OTP_FAILED
+                        print("Otp failed")
+            except Exception as e:
+                return {"OTP verification failed":self.ordering_process_status}
+
 
         """ PLACING ORDER """
         self.ordering_process_status = self.STATUS_PLACING_ORDER
         cod=self.cash_payment()
-        if not cod:
-            return {"COD not available"}
-        self .place_order()
+        if cod==0:
+            return {"COD not available":self.ordering_process_status}
+        elif cod==2:
+            return {"payment selection failed":self.ordering_process_status}
+        elif cod==3:
+            return {"order now failed":self.ordering_process_status}
+        elif cod==4:
+            return {"error in cash payment ":self.ordering_process_status}
+
+        place_order=self .place_order()
+        if not place_order:
+            return {"Place order button not found":self.ordering_process_status}
         self.ordering_process_status = self.STATUS_ORDER_PLACED
 
     def start_ordering_process_thread(self):
@@ -176,17 +209,17 @@ class AmazonOrdering:
         print("Buying enter")
         try:
             print("Buying started")
-            time.sleep(2)
+            time.sleep(5)
             buy_btn = WebDriverWait(self.web, 10).until(
                     EC.presence_of_element_located((By.ID, "buy-now-button")
                 ))
             buy_btn.click()
             print("Buying button clicked")
             time.sleep(1)
+            return 1
         except Exception as e:
             print("Buying not done ")
-            print(e)
-            return e
+            return 0
 
     def login_user(self):
         try:
@@ -208,7 +241,7 @@ class AmazonOrdering:
 
             except Exception as e:
                 print(f"Timeout occurred while finding the username input field: {e}")
-                return e
+                return 2
 
             try:
                 submit = WebDriverWait(self.web, 10).until(
@@ -219,7 +252,7 @@ class AmazonOrdering:
                 time.sleep(5)
             except Exception as e:
                 print(f"Timeout occurred while finding the submit button: {e}")
-                return e
+                return 3
             time.sleep(2)
 
             try:
@@ -231,7 +264,7 @@ class AmazonOrdering:
                 print("Password sent")
             except Exception as e:
                 print(f"Timeout occurred while finding the password input field: {e}")
-                return e
+                return 4
 
             try:
                 login = WebDriverWait(self.web, 10).until(
@@ -242,10 +275,10 @@ class AmazonOrdering:
                 time.sleep(5)
             except Exception as e:
                 print(f"Timeout occurred while finding the login button: {e}")
-                return e
+                return 5
 
         except Exception as e:
-            return e
+            return 0
 
     def check_for_otp(self):
         try:
@@ -293,20 +326,25 @@ class AmazonOrdering:
             )
 
             time.sleep(5)
+            try:
 
-            payment_selection = self.web.find_element(By.XPATH,
-                                                      "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[2]/div/span/span/input")
-            payment_selection.click()
+                payment_selection = self.web.find_element(By.XPATH,
+                                                          "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[2]/div/span/span/input")
+                payment_selection.click()
 
-            time.sleep(3)
+                time.sleep(5)
+            except Exception as e:
+                return 2
+            try:
 
-            order_now = self.web.find_element(By.XPATH,
-                                              "/html/body/div[5]/div[1]/div/div[2]/div/div/div[2]/div/div[1]/div/div[1]/div[1]/div/span")
-            order_now.click()
-            time.sleep(2)
-
+                order_now = self.web.find_element(By.XPATH,
+                                                  "/html/body/div[5]/div[1]/div/div[2]/div/div/div[2]/div/div[1]/div/div[1]/div[1]/div/span")
+                order_now.click()
+                time.sleep(2)
+            except Exception as e:
+                return 3
         except Exception as e:
-            return e
+            return 4
 
     '''def search_element(self):
             try:
@@ -332,7 +370,7 @@ class AmazonOrdering:
             place_odr.click()
         except Exception as e:
             print(e)
-            return e
+            return 0
 
     def get_ordering_process_status(self):
         return self.ordering_process_status
