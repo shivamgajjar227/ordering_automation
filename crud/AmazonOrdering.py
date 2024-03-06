@@ -13,6 +13,7 @@ import time
 
 router = APIRouter()
 
+
 class AmazonOrdering:
     STATUS_PROCESS_STARTED = 1
     STATUS_PRODUCT_FOUND = 2
@@ -20,7 +21,7 @@ class AmazonOrdering:
     STATUS_CAPTCHA_FOUND = 4
     STATUS_CAPTCHA_SUCCESSFUL = 5
     STATUS_CAPTCHA_FAILED = 6
-    STATUS_BUYING_STARTED=7
+    STATUS_BUYING_STARTED = 7
     STATUS_PROCESS_LOGIN_USER = 8
     STATUS_LOGIN_DONE = 9
     STATUS_CHECKING_FOR_OTP = 10
@@ -29,8 +30,7 @@ class AmazonOrdering:
     STATUS_OTP_FAILED = 13
     STATUS_PLACING_ORDER = 14
     STATUS_ORDER_PLACED = 15
-    STATUS_BUYING_FAILED=16
-
+    STATUS_BUYING_FAILED = 16
 
     def __init__(self, ordering_object_id):
         self.is_otp_required = False
@@ -86,27 +86,26 @@ class AmazonOrdering:
         print("Buying the product")
 
         """ BUYING THE PRODUCT"""
-        self.ordering_process_status=self.STATUS_BUYING_STARTED
-        buying_product=self.buying_product()
+        self.ordering_process_status = self.STATUS_BUYING_STARTED
+        buying_product = self.buying_product()
         if not buying_product:
-            self.ordering_process_status=self.STATUS_BUYING_FAILED
-            return {"buying failed":self.ordering_process_status}
+            self.ordering_process_status = self.STATUS_BUYING_FAILED
+            return {"buying failed": self.ordering_process_status}
         print("logging in")
 
         """ LOGGING IN """
         self.ordering_process_status = self.STATUS_PROCESS_LOGIN_USER
-        login_user=self.login_user()
-        if login_user==0:
-            return {"login failed":self.ordering_process_status}
-        elif login_user==2:
-            return {"username field not found":self.ordering_process_status}
-        elif login_user==3:
-            return {"username continue button not found":self.ordering_process_status}
-        elif login_user==4:
-            return {"password password field not found ":self.ordering_process_status}
-        elif login_user==5:
-            return {"login button not found":self.ordering_process_status}
-
+        login_user = self.login_user()
+        if login_user == 0:
+            return {"login failed": self.ordering_process_status}
+        elif login_user == 2:
+            return {"username field not found": self.ordering_process_status}
+        elif login_user == 3:
+            return {"username continue button not found": self.ordering_process_status}
+        elif login_user == 4:
+            return {"password password field not found ": self.ordering_process_status}
+        elif login_user == 5:
+            return {"login button not found": self.ordering_process_status}
 
         self.ordering_process_status = self.STATUS_LOGIN_DONE
         print("Checking for otp")
@@ -128,24 +127,23 @@ class AmazonOrdering:
                         self.ordering_process_status = self.STATUS_OTP_FAILED
                         print("Otp failed")
             except Exception as e:
-                return {"OTP verification failed":self.ordering_process_status}
-
+                return {"OTP verification failed": self.ordering_process_status}
 
         """ PLACING ORDER """
         self.ordering_process_status = self.STATUS_PLACING_ORDER
-        cod=self.cash_payment()
-        if cod==0:
-            return {"COD not available":self.ordering_process_status}
-        elif cod==2:
-            return {"payment selection failed":self.ordering_process_status}
-        elif cod==3:
-            return {"order now failed":self.ordering_process_status}
-        elif cod==4:
-            return {"error in cash payment ":self.ordering_process_status}
+        cod = self.cash_payment()
+        if cod == 0:
+            return {"COD not available": self.ordering_process_status}
+        elif cod == 2:
+            return {"payment selection failed": self.ordering_process_status}
+        elif cod == 3:
+            return {"order now failed": self.ordering_process_status}
+        elif cod == 4:
+            return {"error in cash payment ": self.ordering_process_status}
 
-        place_order=self .place_order()
+        place_order = self.place_order()
         if not place_order:
-            return {"Place order button not found":self.ordering_process_status}
+            return {"Place order button not found": self.ordering_process_status}
         self.ordering_process_status = self.STATUS_ORDER_PLACED
 
     def start_ordering_process_thread(self):
@@ -166,7 +164,7 @@ class AmazonOrdering:
             self.web = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
             self.web.get(self.product_link)
         except Exception as e:
-            return (f"no product found, error: {e}")
+            return f"no product found, error: {e}"
 
     def checking_for_any_captcha(self):
         try:
@@ -181,18 +179,18 @@ class AmazonOrdering:
 
     def captcha_or_not(self):
 
-            # self.captcha = self.web.find_element(By.XPATH,
-            #                                      "/html/body/div/div[1]/div[3]/div/div/form/div[1]/div/div/div[2]/input")
+        # self.captcha = self.web.find_element(By.XPATH,
+        #                                      "/html/body/div/div[1]/div[3]/div/div/form/div[1]/div/div/div[2]/input")
 
-            try:
-                self.buy_btn = WebDriverWait(self.web, 10).until(
-                    EC.presence_of_element_located((By.ID,
-                                                    "buy-now-button"))
-                )
-                return self.buy_btn
+        try:
+            self.buy_btn = WebDriverWait(self.web, 120).until(
+                EC.presence_of_element_located((By.ID,
+                                                "buy-now-button"))
+            )
+            return self.buy_btn
 
-            except Exception as e:
-                return e
+        except Exception as e:
+            return e
 
     def input_captcha(self):
         try:
@@ -210,9 +208,11 @@ class AmazonOrdering:
         try:
             print("Buying started")
             time.sleep(5)
-            buy_btn = WebDriverWait(self.web, 10).until(
-                    EC.presence_of_element_located((By.ID, "buy-now-button")
-                ))
+
+            buy_btn = WebDriverWait(self.web, 120).until(
+                EC.presence_of_element_located((By.ID, "buy-now-button")
+                                               ))
+
             buy_btn.click()
             print("Buying button clicked")
             time.sleep(1)
@@ -232,9 +232,11 @@ class AmazonOrdering:
                 # self.driver.get("https://www.amazon.com/gp/sign-in.html")
 
                 # Find username input field and enter email
-                username_input = WebDriverWait(self.web, 10).until(
+
+                username_input = WebDriverWait(self.web, 120).until(
                     EC.presence_of_element_located((By.ID, "ap_email"))
                 )
+
                 username_input.send_keys(self.email)
                 print("Username sent")
 
@@ -244,7 +246,8 @@ class AmazonOrdering:
                 return 2
 
             try:
-                submit = WebDriverWait(self.web, 10).until(
+
+                submit = WebDriverWait(self.web, 120).until(
                     EC.element_to_be_clickable((By.ID,
                                                 "continue"))
                 )
@@ -256,10 +259,11 @@ class AmazonOrdering:
             time.sleep(2)
 
             try:
-                password = WebDriverWait(self.web, 10).until(
+
+                password = WebDriverWait(self.web, 120).until(
                     EC.visibility_of_element_located(
-                        (By.ID, "ap_password"))
-                )
+                        (By.ID, "ap_password")))
+                    
                 password.send_keys(self.password)
                 print("Password sent")
             except Exception as e:
@@ -267,12 +271,13 @@ class AmazonOrdering:
                 return 4
 
             try:
-                login = WebDriverWait(self.web, 10).until(
+
+                login = WebDriverWait(self.web, 120).until(
                     EC.element_to_be_clickable((By.ID,
                                                 "signInSubmit"))
-                )
+                    )
                 login.click()
-                time.sleep(5)
+                # time.sleep(5)
             except Exception as e:
                 print(f"Timeout occurred while finding the login button: {e}")
                 return 5
@@ -282,8 +287,8 @@ class AmazonOrdering:
 
     def check_for_otp(self):
         try:
-            otp_input_field = self.web.find_element(By.XPATH,
-                                                    "/html/body/div[1]/div[2]/div/div/div[3]/form/div[1]/div/div/span[1]/div/input")
+            otp_input_field = WebDriverWait(self.web, 15).until(EC.presence_of_element_located((By.XPATH,
+                                                                                                "/html/body/div[1]/div[2]/div/div/div[3]/form/div[1]/div/div/span[1]/div/input")))
 
             if otp_input_field:
                 return 1
@@ -293,16 +298,16 @@ class AmazonOrdering:
 
     def input_otp(self, otp: str):
         try:
-            otp_input_field = self.web.find_element(By.XPATH,
-                                                    "/html/body/div[1]/div[2]/div/div/div[3]/form/div[1]/div/div/span[1]/div/input")
+            otp_input_field = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
+                                                                                                "/html/body/div[1]/div[2]/div/div/div[3]/form/div[1]/div/div/span[1]/div/input")))
             otp_input_field.send_keys(otp)
 
-            submit_otp = self.web.find_element(By.XPATH,
-                                               "/html/body/div[1]/div[2]/div/div/div[3]/form/div[7]/span/span/input")
+            submit_otp = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
+                                                                                           "/html/body/div[1]/div[2]/div/div/div[3]/form/div[7]/span/span/input")))
             submit_otp.click()
 
-            success_otp = self.web.find_element(By.XPATH,
-                                                "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[1]/div/div[2]/div[6]/div/div/div/div/div[1]/div/label/input")
+            success_otp = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
+                                                                                            "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[1]/div/div[2]/div[6]/div/div/div/div/div[1]/div/label/input")))
 
             if success_otp:
                 return 1
@@ -312,14 +317,14 @@ class AmazonOrdering:
 
     def cash_payment(self):
         try:
-            cash_pay = self.web.find_element(By.XPATH,
-                                             "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[1]/div/div/div[6]/div/div/div/div/div[1]/div/label/input")
+            cash_pay = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
+                                                                                         "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[1]/div/div/div[6]/div/div/div/div/div[1]/div/label/input")))
             cash_pay.click()
 
             if not cash_pay.is_enabled():
                 return 0
 
-            payment_page = WebDriverWait(self.web, 25).until(
+            payment_page = WebDriverWait(self.web, 120).until(
                 EC.presence_of_element_located(
                     (By.XPATH,
                      "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[2]/div/span/span/input"))
@@ -328,8 +333,8 @@ class AmazonOrdering:
             time.sleep(5)
             try:
 
-                payment_selection = self.web.find_element(By.XPATH,
-                                                          "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[2]/div/span/span/input")
+                payment_selection = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
+                                                                                                      "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[2]/div/span/span/input")))
                 payment_selection.click()
 
                 time.sleep(5)
@@ -337,8 +342,8 @@ class AmazonOrdering:
                 return 2
             try:
 
-                order_now = self.web.find_element(By.XPATH,
-                                                  "/html/body/div[5]/div[1]/div/div[2]/div/div/div[2]/div/div[1]/div/div[1]/div[1]/div/span")
+                order_now = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
+                                                                                              "/html/body/div[5]/div[1]/div/div[2]/div/div/div[2]/div/div[1]/div/div[1]/div[1]/div/span")))
                 order_now.click()
                 time.sleep(2)
             except Exception as e:
@@ -364,8 +369,8 @@ class AmazonOrdering:
     def place_order(self):
         try:
             place_odr = WebDriverWait(self.web, 10).until(
-                    EC.element_to_be_clickable((By.ID,
-                                                "bottomSubmitOrderButtonId"))
+                EC.element_to_be_clickable((By.ID,
+                                            "bottomSubmitOrderButtonId"))
             )
             place_odr.click()
         except Exception as e:
