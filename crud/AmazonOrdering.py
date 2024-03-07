@@ -1,4 +1,6 @@
 import logging
+
+from numpy import sort
 from selenium import webdriver
 from selenium.common import NoSuchElementException
 from selenium.webdriver import Keys
@@ -11,6 +13,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from fastapi import APIRouter
 import threading
 import time
+from selenium.webdriver.support.ui import Select
 
 router = APIRouter()
 
@@ -51,10 +54,12 @@ class AmazonOrdering:
         self.otp_success = 0
         self.track_order_process_thread_object = None
 
-    def ordering_process_block_wise(self, email: str, password: str, product_link: str):
+    def ordering_process_block_wise(self, email: str, password: str, product_link: str, quantity: int):
         self.email = email
         self.password = password
         self.product_link = product_link
+        self.quantity = quantity
+        print(quantity)
 
         """ Process started """
         self.ordering_process_status = self.STATUS_PROCESS_STARTED
@@ -85,6 +90,28 @@ class AmazonOrdering:
         else:
             print("No captcha founddddddddddddd")
         print("Buying the product")
+
+        '''Checking for the amount of items'''
+        quantity_dropdown = WebDriverWait(self.web, 120).until(
+            EC.presence_of_element_located((By.ID,
+                                            "quantity"))
+        )
+
+        quantity_options = [option.text for option in Select(quantity_dropdown).options]
+        sort(quantity_options)
+        max_quantity = int(quantity_options[-1])
+        print(max_quantity)
+
+        if quantity <= max_quantity:
+            Select(quantity_dropdown).select_by_visible_text(str(quantity))
+            print("Selectedddddd")
+        # else:
+        #     self.web.execute_script(
+        #         "prompt('Maximum quantity available is {} units. Do you want to select the maximum quantity?')".format(
+        #             max_quantity))
+        #     Select(quantity_dropdown).select_by_visible_text(str(max_quantity))
+        #     print("Selected maximum quantity:", max_quantity)
+        # return {"Done"}
 
         """ BUYING THE PRODUCT"""
         self.ordering_process_status = self.STATUS_BUYING_STARTED
@@ -347,7 +374,6 @@ class AmazonOrdering:
                 return 0
             cash_pay.click()
 
-
             payment_page = WebDriverWait(self.web, 120).until(
                 EC.presence_of_element_located(
                     (By.XPATH,
@@ -407,7 +433,8 @@ class AmazonOrdering:
     def special_del(self):
         try:
             del_btn = WebDriverWait(self.web, timeout=10).until(
-                EC.element_to_be_clickable((By.XPATH, "//*[@id='shippingOptionFormId']/div/div[3]/div/span/span/span/input")))
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//*[@id='shippingOptionFormId']/div/div[3]/div/span/span/span/input")))
             del_btn.click()
             print("Delivery selected")
         except Exception as e:
