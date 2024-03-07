@@ -130,6 +130,8 @@ class AmazonOrdering:
             except Exception as e:
                 return {"OTP verification failed": self.ordering_process_status}
 
+        self.special_del()
+
         """ PLACING ORDER """
         self.ordering_process_status = self.STATUS_PLACING_ORDER
         cod = self.cash_payment()
@@ -198,21 +200,28 @@ class AmazonOrdering:
 
             '''By Passing Captcha'''
 
-            link=self.web.find_element(By.XPATH,
-                                  "//div[@class = 'a-row a-text-center']//img").get_attribute('src')
-            captcha=AmazonCaptcha.fromlink(link)
-            captcha_value=AmazonCaptcha.solve(captcha)
+            link = self.web.find_element(By.XPATH,
+                                         "//div[@class = 'a-row a-text-center']//img").get_attribute('src')
+            captcha = AmazonCaptcha.fromlink(link)
+            captcha_value = AmazonCaptcha.solve(captcha)
             print(captcha_value)
             captcha_success = WebDriverWait(self.web, 120).until(
                 EC.presence_of_element_located((By.ID,
                                                 "captchacharacters"))
             )
             captcha_success.send_keys(captcha_value)
-            captcha_btn=WebDriverWait(self.web, 120).until(
+            captcha_btn = WebDriverWait(self.web, 120).until(
                 EC.presence_of_element_located((By.CLASS_NAME,
                                                 "a-button-text"))
             )
             captcha_btn.click()
+            time.sleep(5)
+            if "https://www.amazon.in/errors/validateCaptcha" not in self.web.current_url:
+                print("Captcha successfulllllllllllllll")
+            else:
+                return 0
+
+            print(self.web.current_url)
             if captcha_success:
                 return 1
         except Exception as e:
@@ -278,7 +287,7 @@ class AmazonOrdering:
                 password = WebDriverWait(self.web, 120).until(
                     EC.visibility_of_element_located(
                         (By.ID, "ap_password")))
-                    
+
                 password.send_keys(self.password)
                 print("Password sent")
             except Exception as e:
@@ -290,7 +299,7 @@ class AmazonOrdering:
                 login = WebDriverWait(self.web, 120).until(
                     EC.element_to_be_clickable((By.ID,
                                                 "signInSubmit"))
-                    )
+                )
                 login.click()
                 # time.sleep(5)
             except Exception as e:
@@ -314,15 +323,15 @@ class AmazonOrdering:
     def input_otp(self, otp: str):
         try:
             otp_input_field = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
-                                                                                                "/html/body/div[1]/div[2]/div/div/div[3]/form/div[1]/div/div/span[1]/div/input")))
+                                                                                                 "/html/body/div[1]/div[2]/div/div/div[3]/form/div[1]/div/div/span[1]/div/input")))
             otp_input_field.send_keys(otp)
 
             submit_otp = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
-                                                                                           "/html/body/div[1]/div[2]/div/div/div[3]/form/div[7]/span/span/input")))
+                                                                                            "/html/body/div[1]/div[2]/div/div/div[3]/form/div[7]/span/span/input")))
             submit_otp.click()
 
             success_otp = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
-                                                                                            "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[1]/div/div[2]/div[6]/div/div/div/div/div[1]/div/label/input")))
+                                                                                             "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[1]/div/div[2]/div[6]/div/div/div/div/div[1]/div/label/input")))
 
             if success_otp:
                 return 1
@@ -333,11 +342,11 @@ class AmazonOrdering:
     def cash_payment(self):
         try:
             cash_pay = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
-                                                                                         "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[1]/div/div/div[6]/div/div/div/div/div[1]/div/label/input")))
-            cash_pay.click()
-
+                                                                                          "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[1]/div/div/div[6]/div/div/div/div/div[1]/div/label/input")))
             if not cash_pay.is_enabled():
                 return 0
+            cash_pay.click()
+
 
             payment_page = WebDriverWait(self.web, 120).until(
                 EC.presence_of_element_located(
@@ -349,7 +358,7 @@ class AmazonOrdering:
             try:
 
                 payment_selection = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
-                                                                                                      "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[2]/div/span/span/input")))
+                                                                                                       "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[2]/div/span/span/input")))
                 payment_selection.click()
 
                 time.sleep(5)
@@ -358,7 +367,7 @@ class AmazonOrdering:
             try:
 
                 order_now = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
-                                                                                              "/html/body/div[5]/div[1]/div/div[2]/div/div/div[2]/div/div[1]/div/div[1]/div[1]/div/span")))
+                                                                                               "/html/body/div[5]/div[1]/div/div[2]/div/div/div[2]/div/div[1]/div/div[1]/div[1]/div/span")))
                 order_now.click()
                 time.sleep(2)
             except Exception as e:
@@ -394,3 +403,12 @@ class AmazonOrdering:
 
     def get_ordering_process_status(self):
         return self.ordering_process_status
+
+    def special_del(self):
+        try:
+            del_btn = WebDriverWait(self.web, timeout=10).until(
+                EC.element_to_be_clickable((By.XPATH, "//*[@id='shippingOptionFormId']/div/div[3]/div/span/span/span/input")))
+            del_btn.click()
+            print("Delivery selected")
+        except Exception as e:
+            return e
