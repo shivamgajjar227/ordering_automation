@@ -1,5 +1,9 @@
 import logging
-
+import requests
+import time
+from telegram import Bot
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import logging
 from numpy import sort
 from selenium import webdriver
 from selenium.common import NoSuchElementException
@@ -53,6 +57,9 @@ class AmazonOrdering:
         self.otp_string = None
         self.otp_success = 0
         self.track_order_process_thread_object = None
+        self.bot_token = '7413974594:AAHr2onUCPPIihbVzNPqDrLLjyE1ptFhxF8'
+        self.telegram_bot = None
+        self.otp_received = None
 
     def ordering_process_block_wise(self, email: str, password: str, product_link: str, quantity: int):
         self.email = email
@@ -373,11 +380,25 @@ class AmazonOrdering:
     def input_otp(self, otp: str):
         try:
             otp_input_field = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
+
                                                                                                  "/html/body/div[1]/div[2]/div/div/div[3]/form/div[1]/div/div/span[1]/div/input")))
-            otp_input_field.send_keys(otp)
+
+
+            key = '7413974594:AAHr2onUCPPIihbVzNPqDrLLjyE1ptFhxF8'
+
+            start_time = time.time()
+            while True:
+                result = requests.get(f'https://api.telegram.org/bot{key}/getUpdates?timeout=1').json()
+                if result['result'][-1]['message']['date'] < start_time: continue  # Ignore old messages
+                message = result['result'][-1]['message']['text'].split()
+                print(message[0])
+                break
+
+            otp_input_field.send_keys(message[0])
 
             submit_otp = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
                                                                                             "/html/body/div[1]/div[2]/div/div/div[3]/form/div[7]/span/span/input")))
+
             submit_otp.click()
 
             success_otp = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
@@ -391,20 +412,20 @@ class AmazonOrdering:
 
     def cash_payment(self):
         try:
-            # cash_pay = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
-            #                                                                               "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[7]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[1]/div/div[1]/div[3]/div/div/div/div/div/div[1]/span/div/label/input")))
-            # if not cash_pay.is_enabled():
-            #     return 0
-            # cash_pay.click()
+            cash_pay = WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
+                                                                                          "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[7]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[1]/div/div[1]/div[3]/div/div/div/div/div/div[1]/span/div/label/input")))
+            if not cash_pay.is_enabled():
+                return 0
+            cash_pay.click()
             address_selection=WebDriverWait(self.web, 120).until(EC.presence_of_element_located((By.XPATH,
                                                                                           "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[1]/div/div[3]/div/div[2]/div/div[2]/div/form/div/div[2]/div/span/span")))
             
             address_selection.click()
-            # payment_page = WebDriverWait(self.web, 120).until(
-            #     EC.presence_of_element_located(
-            #         (By.XPATH,
-            #          "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[2]/div/span/span/input"))
-            # )
+            payment_page = WebDriverWait(self.web, 120).until(
+                EC.presence_of_element_located(
+                    (By.XPATH,
+                     "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[6]/div/div[3]/div/div/div[2]/div/div[2]/div/div/form/div/div[2]/div/span/span/input"))
+            )
 
             time.sleep(5)
             try:
@@ -414,11 +435,11 @@ class AmazonOrdering:
                 payment_selection.click()
                 time.sleep(5)
 
-                # billing_address = WebDriverWait(self.web, 20).until(EC.presence_of_element_located((By.XPATH,
-                #                                                                                        "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[7]/div/div[3]/div/div/div[2]/div/div[2]/div/form/div/div[2]/div/span/span/span")))
-                # if billing_address:
-                #     billing_address.click()
-                # time.sleep(5)
+                billing_address = WebDriverWait(self.web, 20).until(EC.presence_of_element_located((By.XPATH,
+                                                                                                       "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[7]/div/div[3]/div/div/div[2]/div/div[2]/div/form/div/div[2]/div/span/span/span")))
+                if billing_address:
+                    billing_address.click()
+                time.sleep(5)
                 print("enterrrrrr")
                 offer_close = WebDriverWait(self.web, 20).until(EC.presence_of_element_located((By.XPATH,
                                                                                                        "/html/body/div[5]/div[1]/div/div[2]/div/div/div[1]/div[1]/div/div[8]/div/div[3]/div[1]/div[2]/div/span/a")))
@@ -478,3 +499,4 @@ class AmazonOrdering:
             print("Delivery selected")
         except Exception as e:
             return e
+
